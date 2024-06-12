@@ -15,6 +15,6 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
             value = "SELECT * FROM Customer WHERE phoneNumber = :phone_number",
             nativeQuery = true
     )
-    Optional<Customer> findCustomerByPhoneNumberNative(@Param("phone_mumber") String phoneNumber);
+    Optional<Customer> findCustomerByPhoneNumberNative(@Param("phone_number") String phoneNumber);
 
 }

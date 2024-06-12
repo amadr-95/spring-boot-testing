@@ -16,15 +16,6 @@ import java.util.UUID;
 public class Customer {
 
     @Id
-    @SequenceGenerator(
-            name = "customer_sequence",
-            sequenceName = "customer_sequence",
-            allocationSize = 1
-    )
-    @GeneratedValue(
-            generator = "customer_sequence",
-            strategy = GenerationType.SEQUENCE
-    )
     private UUID id;
     private String name;
     private String phoneNumber;
