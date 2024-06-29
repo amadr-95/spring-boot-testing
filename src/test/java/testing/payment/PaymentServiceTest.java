@@ -16,9 +16,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static testing.payment.Currency.*;
 
 
@@ -77,11 +80,6 @@ class PaymentServiceTest {
 
         Payment paymentArgumentCaptorValue = paymentArgumentCaptor.getValue();
 
-        /*assertThat(paymentArgumentCaptorValue)
-                .usingRecursiveComparison()
-                .ignoringFields("customerId", "paymentId")
-                .isEqualTo(request);*/
-
         assertThat(paymentArgumentCaptorValue).isNotNull();
         assertThat(paymentArgumentCaptorValue.getPaymentDescription()).isEqualTo(paymentDescription);
         assertThat(paymentArgumentCaptorValue.getPaymentMethod()).isEqualTo(paymentMethod);
@@ -89,5 +87,104 @@ class PaymentServiceTest {
         assertThat(paymentArgumentCaptorValue.getCurrency()).isEqualTo(currency);
         assertThat(paymentArgumentCaptorValue.getCustomerId()).isEqualTo(customerId);
 
+    }
+
+    @Test
+    void itShouldNotSavePaymentWhenCustomerIdDoesNotExist() {
+        //Given
+        String paymentDescription = "description";
+        String paymentMethod = "card";
+        BigDecimal amount = new BigDecimal(10);
+
+        UUID customerId = UUID.randomUUID();
+
+        given(customerRepository.findById(customerId))
+                .willReturn(Optional.empty());
+
+        PaymentRequest request = PaymentRequest.builder()
+                .paymentMethod(paymentMethod)
+                .paymentDescription(paymentDescription)
+                .amount(amount)
+                .currency(EUR)
+                .build();
+
+        //When
+        //Then
+        assertThatThrownBy(() -> underTest.chargePayment(customerId, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(String.format("Customer [%s] does not exist", customerId));
+
+        then(paymentRepository).should(never()).save(any());
+        then(paymentRepository).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    void itShouldThrowExceptionWhenCurrencyIsNotSupported() {
+        //Given
+        UUID customerId = UUID.randomUUID();
+        String paymentDescription = "description";
+        String paymentMethod = "card";
+        BigDecimal amount = new BigDecimal(10);
+
+        // customer exists
+        given(customerRepository.findById(customerId)).
+                willReturn(Optional.of(mock(Customer.class)));
+
+        // payment request
+        PaymentRequest request = PaymentRequest.builder()
+                .paymentMethod(paymentMethod)
+                .paymentDescription(paymentDescription)
+                .amount(amount)
+                .currency(GBP) //not accepted
+                .build();
+
+
+        //When
+        //Then
+        assertThatThrownBy(() -> underTest.chargePayment(customerId, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(String.format("Currency [%s] not supported", request.getCurrency()));
+
+        then(cardPaymentCharger).shouldHaveNoMoreInteractions();
+        then(paymentRepository).should(never()).save(any(Payment.class));
+    }
+
+    @Test
+    void itShouldThrowExceptionWhenCardIsNotDebited() {
+        //Given
+        UUID customerId = UUID.randomUUID();
+        String paymentDescription = "description";
+        String paymentMethod = "card";
+        BigDecimal amount = new BigDecimal(10);
+        Currency currency = EUR;
+
+        // customet exists
+        given(customerRepository.findById(customerId))
+                .willReturn(Optional.of(mock(Customer.class)));
+
+        // payment request
+        PaymentRequest request = PaymentRequest.builder()
+                .paymentMethod(paymentMethod)
+                .paymentDescription(paymentDescription)
+                .amount(amount)
+                .currency(currency)
+                .build();
+
+        // card charge fail
+        given(cardPaymentCharger.chargeCard(
+                paymentMethod,
+                amount,
+                currency,
+                paymentDescription
+        )).willReturn(new CardPaymentCharge(false));
+
+
+        //When
+        //Then
+        assertThatThrownBy(() -> underTest.chargePayment(customerId, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(String.format("Card not debited for customer [%s]", customerId));
+
+        then(paymentRepository).should(never()).save(any(Payment.class));
     }
 }
