@@ -22,4 +22,9 @@ public class Customer {
     private String name;
     @Column(nullable = false, unique = true)
     private String phoneNumber;
+
+    public Customer(String name, String phoneNumber) {
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+    }
 }
