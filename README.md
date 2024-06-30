@@ -57,7 +57,6 @@ class PaymentRepositoryTest {
                 .hasValueSatisfying(
                         p -> assertThat(p).usingRecursiveComparison().isEqualTo(payment)
                 );
-
     }
 }
 ```
@@ -65,93 +64,124 @@ class PaymentRepositoryTest {
 - Testing the _CustomerService_ class using `@Mock` and `@Captor`.
 
 ```java
-@Test
-void itShouldSaveCustomer() throws NumberParseException {
-    //Given
+@ExtendWith(MockitoExtension.class)
+class CustomerServiceTest {
+    @Captor
+    private ArgumentCaptor<Customer> customerArgumentCaptor;
 
-    // .. phoneNumber
-    String phoneNumber = "600000000";
+    @Mock
+    private CustomerRepository customerRepository;
 
-    // .. a customer request
-    CustomerRegistrationRequest request = new CustomerRegistrationRequest(
-            "Amador", phoneNumber
-    );
+    @Mock
+    private PhoneNumberValidator phoneNumberValidator;
 
-    // given a valid number (mock)
-    given(phoneNumberValidator.validate(phoneNumber)).willReturn(true);
+    @InjectMocks
+    private CustomerService underTest;
 
-    // ... no customer found with that phone number (mock)
-    given(customerRepository.findCustomerByPhoneNumberNative(phoneNumber))
-            .willReturn(Optional.empty());
+    @Test
+    void itShouldSaveCustomer() throws NumberParseException {
+        //Given
 
-    //When
-    underTest.registerNewCustomer(request);
+        // .. phoneNumber
+        String phoneNumber = "600000000";
 
-    //Then
-    then(customerRepository).should().save(customerArgumentCaptor.capture());
+        // .. a customer request
+        CustomerRegistrationRequest request = new CustomerRegistrationRequest(
+                "Amador", phoneNumber
+        );
 
-    Customer customer = customerArgumentCaptor.getValue();
-    assertThat(customer).isNotNull();
-    assertThat(customer.getName()).isEqualTo("Amador");
-    assertThat(customer.getPhoneNumber()).isEqualTo(phoneNumber);
+        // given a valid number (mock)
+        given(phoneNumberValidator.validate(phoneNumber)).willReturn(true);
+
+        // ... no customer found with that phone number (mock)
+        given(customerRepository.findCustomerByPhoneNumberNative(phoneNumber))
+                .willReturn(Optional.empty());
+
+        //When
+        underTest.registerNewCustomer(request);
+
+        //Then
+        then(customerRepository).should().save(customerArgumentCaptor.capture());
+
+        Customer customer = customerArgumentCaptor.getValue();
+        assertThat(customer).isNotNull();
+        assertThat(customer.getName()).isEqualTo("Amador");
+        assertThat(customer.getPhoneNumber()).isEqualTo(phoneNumber);
+    }
 }
 ```
 
 - Testing the _StripeServiceTest_ class mocking static method with Mockito
 
 ```java
+@ExtendWith(MockitoExtension.class)
+class StripeServiceTest {
 
-@Test
-void itShouldChargeCard() {
-    //Given
-    String method = "method";
-    String description = "description";
-    BigDecimal amount = new BigDecimal(10);
-    Currency currency = EUR;
+    @Captor
+    private ArgumentCaptor<PaymentIntentCreateParams> paramsArgumentCaptor;
 
-    // Mock the PaymentIntent and Charge
-    PaymentIntent paymentIntentMock = mock(PaymentIntent.class);
-    Charge chargeMock = mock(Charge.class);
+    @Captor
+    private ArgumentCaptor<RequestOptions> requestOptionsArgumentCaptor;
 
-    // Set up the behavior for the mock objects
-    given(paymentIntentMock.getLatestChargeObject()).willReturn(chargeMock);
-    given(chargeMock.getPaid()).willReturn(true);
+    private StripeService underTest;
+
+    @BeforeEach
+    public void setUp() {
+        underTest = new StripeService();
+    }
+
+    @Test
+    void itShouldChargeCard() {
+        //Given
+        String method = "method";
+        String description = "description";
+        BigDecimal amount = new BigDecimal(10);
+        Currency currency = EUR;
+
+        // Mock the PaymentIntent and Charge
+        PaymentIntent paymentIntentMock = mock(PaymentIntent.class);
+        Charge chargeMock = mock(Charge.class);
+
+        // Set up the behavior for the mock objects
+        given(paymentIntentMock.getLatestChargeObject()).willReturn(chargeMock);
+        given(chargeMock.getPaid()).willReturn(true);
 
 
-    try (MockedStatic<PaymentIntent> paymentIntentMockedStatic =
-                 Mockito.mockStatic(PaymentIntent.class)) {
+        try (MockedStatic<PaymentIntent> paymentIntentMockedStatic =
+                     Mockito.mockStatic(PaymentIntent.class)) {
 
-        //Mock the static method call
-        paymentIntentMockedStatic.when(() -> PaymentIntent.create(
-                        any(PaymentIntentCreateParams.class),
-                        any(RequestOptions.class)
-                )
-        ).thenReturn(paymentIntentMock);
+            //Mock the static method call
+            paymentIntentMockedStatic.when(() -> PaymentIntent.create(
+                            any(PaymentIntentCreateParams.class),
+                            any(RequestOptions.class)
+                    )
+            ).thenReturn(paymentIntentMock);
 
-        //When
-        CardPaymentCharge cardPaymentCharge =
-                underTest.chargeCard(method, amount, currency, description);
+            //When
+            CardPaymentCharge cardPaymentCharge =
+                    underTest.chargeCard(method, amount, currency, description);
 
-        //Then
-        assertThat(cardPaymentCharge).isNotNull();
-        assertThat(cardPaymentCharge.isCardDebited()).isTrue();
+            //Then
+            assertThat(cardPaymentCharge).isNotNull();
+            assertThat(cardPaymentCharge.isCardDebited()).isTrue();
 
-        // .. capture the arguments passed to the static method
-        paymentIntentMockedStatic.verify(() -> PaymentIntent.create(
-                paramsArgumentCaptor.capture(),
-                requestOptionsArgumentCaptor.capture()
-        ));
+            // .. capture the arguments passed to the static method
+            paymentIntentMockedStatic.verify(() -> PaymentIntent.create(
+                    paramsArgumentCaptor.capture(),
+                    requestOptionsArgumentCaptor.capture()
+            ));
 
-        //validate params
-        PaymentIntentCreateParams paramsArgumentCaptorValue = paramsArgumentCaptor.getValue();
-        assertThat(paramsArgumentCaptorValue.getAmount()).isEqualTo(amount.longValue());
-        assertThat(paramsArgumentCaptorValue.getCurrency()).isEqualTo(currency.name().toLowerCase());
-        assertThat(paramsArgumentCaptorValue.getDescription()).isEqualTo(description);
-        assertThat(paramsArgumentCaptorValue.getPaymentMethod()).isEqualTo(method);
+            //validate params
+            PaymentIntentCreateParams paramsArgumentCaptorValue = paramsArgumentCaptor.getValue();
+            assertThat(paramsArgumentCaptorValue.getAmount()).isEqualTo(amount.longValue());
+            assertThat(paramsArgumentCaptorValue.getCurrency()).isEqualTo(currency.name().toLowerCase());
+            assertThat(paramsArgumentCaptorValue.getDescription()).isEqualTo(description);
+            assertThat(paramsArgumentCaptorValue.getPaymentMethod()).isEqualTo(method);
 
-        //validate request options
-        RequestOptions requestOptionsArgumentCaptorValue = requestOptionsArgumentCaptor.getValue();
-        assertThat(requestOptionsArgumentCaptorValue.getApiKey()).isEqualTo("sk_test_CGGvfNiIPwLXiDwaOfZ3oX6Y");
+            //validate request options
+            RequestOptions requestOptionsArgumentCaptorValue = requestOptionsArgumentCaptor.getValue();
+            assertThat(requestOptionsArgumentCaptorValue.getApiKey()).isEqualTo("sk_test_CGGvfNiIPwLXiDwaOfZ3oX6Y");
+        }
     }
 }
 ```
