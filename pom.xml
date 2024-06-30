@@ -48,6 +48,14 @@
             <artifactId>stripe-java</artifactId>
             <version>26.1.0</version>
         </dependency>
+
+        <!--google phone number validator dependency-->
+        <dependency>
+            <groupId>com.googlecode.libphonenumber</groupId>
+            <artifactId>libphonenumber</artifactId>
+            <version>8.13.40</version>
+        </dependency>
+
     </dependencies>
 
     <build>
