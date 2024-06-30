@@ -2,10 +2,7 @@
 
 ## Overview
 
-Software Testing is a skill that you must fully grasp as a software engineer. It ensures that any code you write to
-production is more likely to contain less bugs.
-
-This course has covered the followings aspects:
+This course has covered the following aspects:
 
 - Unit Testing
 - Integration Testing
@@ -17,17 +14,18 @@ This course has covered the followings aspects:
 
 - The diagram shows the different units tested in isolation as well as the integration test that covers the whole
   system.
-  [architecture]
+  
+  ![diagram](https://github.com/amadr-95/spring-boot-testing/assets/122611230/4c110060-b775-4789-a024-2595756376d5)
+
 
 ## Tests Coverage
-
-- [lines-covered]
-- [all-test]
--
+  ![coverage](https://github.com/amadr-95/spring-boot-testing/assets/122611230/9be7967d-391f-4b78-8641-ec3b9b88bedc)  
+  
+  ![tests_passes](https://github.com/amadr-95/spring-boot-testing/assets/122611230/bf782de2-a340-4d03-ab2a-83b9a77ad8b5)
 
 ## Some test code
 
-- Testing the _CustomerRepository_ class using the settings with `@DataJpaTest`.
+- Testing the _PaymentRepository_ class using the settings with `@DataJpaTest`.
 
 ```java
 @DataJpaTest //to test JPA queries
