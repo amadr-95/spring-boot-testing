@@ -25,7 +25,7 @@ This course has covered the followings aspects:
 - [all-test]
 -
 
-## Some code tests snippets
+## Some test code
 
 - Testing the _CustomerRepository_ class using the settings with `@DataJpaTest`.
 
