@@ -1,5 +1,6 @@
 package testing.customer;
 
+import com.google.i18n.phonenumbers.NumberParseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,7 +15,7 @@ public class CustomerController {
     private final CustomerService customerService;
 
     @PostMapping
-    public void registerNewCustomer(@RequestBody CustomerRegistrationRequest request) {
+    public void registerNewCustomer(@RequestBody CustomerRegistrationRequest request) throws NumberParseException {
         customerService.registerNewCustomer(request);
     }
 }
