@@ -43,7 +43,7 @@ class PaymentIntegrationTest {
         //Given
 
         // .. a customer request
-        String phoneNumber = "123456789";
+        String phoneNumber = "600000000";
         CustomerRegistrationRequest customerRequest = CustomerRegistrationRequest.builder()
                 .name("Amador")
                 .phoneNumber(phoneNumber)

@@ -1,5 +1,6 @@
 package testing.customer;
 
+import com.google.i18n.phonenumbers.NumberParseException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -7,6 +8,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import testing.utils.PhoneNumberValidator;
 
 import java.util.Optional;
 
@@ -24,6 +26,9 @@ class CustomerServiceTest {
     @Mock
     private CustomerRepository customerRepository;
 
+    @Mock
+    private PhoneNumberValidator phoneNumberValidator;
+
     @InjectMocks
     private CustomerService underTest;
 
@@ -40,9 +45,9 @@ class CustomerServiceTest {
     }
 
     @Test
-    void itShouldSaveCustomer() {
+    void itShouldSaveCustomer() throws NumberParseException {
         //Given
-        String phoneNumber = "1234567";
+        String phoneNumber = "600000000";
         CustomerRegistrationRequest request = new CustomerRegistrationRequest(
                 "Amador", phoneNumber
         );
@@ -50,6 +55,9 @@ class CustomerServiceTest {
         // ... no customer with that phone number
         given(customerRepository.findCustomerByPhoneNumberNative(phoneNumber))
                 .willReturn(Optional.empty());
+
+        // given a valid number (mock)
+        given(phoneNumberValidator.validate(phoneNumber)).willReturn(true);
 
         //When
         underTest.registerNewCustomer(request);
@@ -64,7 +72,7 @@ class CustomerServiceTest {
     }
 
     @Test
-    void itShouldNotSaveCustomerWhenAlreadyExists() {
+    void itShouldNotSaveCustomerWhenAlreadyExists() throws NumberParseException {
         //Given
         String phoneNumber = "1234567";
         CustomerRegistrationRequest request = new CustomerRegistrationRequest(
@@ -79,6 +87,10 @@ class CustomerServiceTest {
                                 .phoneNumber(request.getPhoneNumber())
                                 .build())
                 );
+
+        // given a valid number (mock)
+        given(phoneNumberValidator.validate(phoneNumber)).willReturn(true);
+
         //When
         underTest.registerNewCustomer(request);
 
@@ -88,7 +100,7 @@ class CustomerServiceTest {
     }
 
     @Test
-    void itShouldThrowExceptionWhenPhoneNumberIsTaken() {
+    void itShouldThrowExceptionWhenPhoneNumberIsTaken() throws NumberParseException {
         //Given
         String phoneNumber = "1234567";
         CustomerRegistrationRequest request = new CustomerRegistrationRequest(
@@ -103,11 +115,35 @@ class CustomerServiceTest {
                                 .phoneNumber(phoneNumber)
                                 .build())
                 );
+
+        // given a valid number (mock)
+        given(phoneNumberValidator.validate(phoneNumber)).willReturn(true);
+
         //When
         //Then
         assertThatThrownBy(() -> underTest.registerNewCustomer(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(String.format("Phone number [%s] is already taken", phoneNumber));
+        then(customerRepository).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    void itShouldThrowExceptionWhenPhoneNumberIsNotValid() throws NumberParseException {
+        //Given
+        String phoneNumber = "1234567";
+        CustomerRegistrationRequest request = new CustomerRegistrationRequest(
+                "Amador", phoneNumber
+        );
+
+        // given a invalid number (mock)
+        given(phoneNumberValidator.validate(phoneNumber)).willReturn(false);
+
+        //When
+        //Then
+        assertThatThrownBy(() -> underTest.registerNewCustomer(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(String.format("Phone number [%s] is not valid", request.getPhoneNumber()));
+
         then(customerRepository).shouldHaveNoMoreInteractions();
     }
 }

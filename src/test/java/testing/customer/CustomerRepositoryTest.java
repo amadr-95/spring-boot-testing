@@ -5,10 +5,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
 
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
 @DataJpaTest //to test jpa queries
@@ -48,21 +49,20 @@ class CustomerRepositoryTest {
     @Test
     void itShouldSaveCustomer() {
         //Given
-        UUID id = UUID.randomUUID();
-        Customer customer = new Customer(id, "Amador", "1234567");
+        Customer customer = new Customer("Amador", "1234567");
 
         //When
         underTest.save(customer);
 
         //Then
-        Optional<Customer> customerOptional = underTest.findById(id);
-        assertThat(customerOptional).isPresent()
-                .hasValueSatisfying(c -> {
-                    /*assertThat(c.getId()).isEqualTo(id);
-                    assertThat(c.getName()).isEqualTo("Amador");
-                    assertThat(c.getPhoneNumber()).isEqualTo("1234567");*/
-                    assertThat(c).usingRecursiveComparison().isEqualTo(customer);
-                });
+        List<Customer> customers = underTest.findAll();
+        assertThat(customers.size()).isEqualTo(1);
+
+        Customer c = customers.get(0);
+
+        assertThat(c).usingRecursiveComparison()
+                .ignoringFields("customerId")
+                .isEqualTo(customer);
     }
 
     @Test

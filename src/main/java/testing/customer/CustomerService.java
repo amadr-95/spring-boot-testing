@@ -1,7 +1,9 @@
 package testing.customer;
 
+import com.google.i18n.phonenumbers.NumberParseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import testing.utils.PhoneNumberValidator;
 
 import java.util.Optional;
 
@@ -10,11 +12,15 @@ import java.util.Optional;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final PhoneNumberValidator phoneValidator;
 
-    public void registerNewCustomer(CustomerRegistrationRequest request) {
+    public void registerNewCustomer(CustomerRegistrationRequest request) throws NumberParseException {
         if (request == null) {
             throw new IllegalArgumentException("Customer cannot be null");
         }
+
+        if (!phoneValidator.validate(request.getPhoneNumber()))
+            throw new IllegalArgumentException(String.format("Phone number [%s] is not valid", request.getPhoneNumber()));
 
         //check if phoneNumber already exists
         String phoneNumber = request.getPhoneNumber();
