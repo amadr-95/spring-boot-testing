@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import testing.customer.CustomerRepository;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,6 +20,10 @@ public class PaymentService {
     private final CardPaymentCharger cardPaymentCharger;
     private final Set<Currency> SUPPORTED_CURRENCIES = Set.of(USD, EUR);
 
+
+    public List<Payment> getAllPayments() {
+        return paymentRepository.findAll();
+    }
 
     public void chargePayment(UUID customerId, PaymentRequest paymentRequest) {
         //check if customer exists
