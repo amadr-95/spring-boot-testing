@@ -1,6 +1,7 @@
 package testing.payment.stripe;
 
 import com.stripe.exception.StripeException;
+import com.stripe.model.Charge;
 import com.stripe.model.PaymentIntent;
 import com.stripe.net.RequestOptions;
 import com.stripe.param.PaymentIntentCreateParams;
@@ -17,7 +18,7 @@ import java.math.BigDecimal;
 public class StripeService implements CardPaymentCharger {
 
     private final RequestOptions requestOptions = RequestOptions.builder()
-            .setStripeAccount("acct_1032D82eZvKYlo2C")
+            .setApiKey("sk_test_CGGvfNiIPwLXiDwaOfZ3oX6Y")
             .build();
 
     @Override
@@ -36,9 +37,10 @@ public class StripeService implements CardPaymentCharger {
                         .build();
         try {
             PaymentIntent paymentIntent = PaymentIntent.create(params, requestOptions);
-            return new CardPaymentCharge(paymentIntent.getLatestChargeObject().getPaid());
+            Charge charge = paymentIntent.getLatestChargeObject();
+            return new CardPaymentCharge(charge.getPaid());
         } catch (StripeException e) {
-            throw new IllegalStateException(e);
+            throw new IllegalStateException("Can not make Stripe charge", e);
         }
     }
 }
