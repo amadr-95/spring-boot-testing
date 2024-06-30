@@ -5,6 +5,7 @@ import com.stripe.model.Charge;
 import com.stripe.model.PaymentIntent;
 import com.stripe.net.RequestOptions;
 import com.stripe.param.PaymentIntentCreateParams;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import testing.payment.CardPaymentCharge;
@@ -14,7 +15,10 @@ import testing.payment.Currency;
 import java.math.BigDecimal;
 
 @Service
-@Primary
+@ConditionalOnProperty(
+        value = "stripe.mocked",
+        havingValue = "false"
+)
 public class StripeService implements CardPaymentCharger {
 
     private final RequestOptions requestOptions = RequestOptions.builder()
